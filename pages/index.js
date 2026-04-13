@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
 
 export default function Home() {
   const [view, setView] = useState('welcome')
@@ -7,162 +6,177 @@ export default function Home() {
   const [offers, setOffers] = useState([])
 
   useEffect(() => {
-    fetchRequests()
-    fetchOffers()
-  }, [])
+    if (view !== 'welcome') {
+      fetchData()
+    }
+  }, [view])
 
-  async function fetchRequests() {
-    const { data } = await supabase.from('requests').select('*').eq('status', 'open')
-    setRequests(data || [])
-  }
-
-  async function fetchOffers() {
-    const { data } = await supabase.from('offers').select('*').eq('status', 'active')
-    setOffers(data || [])
+  async function fetchData() {
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      )
+      const { data: reqs } = await supabase.from('requests').select('*')
+      const { data: offs } = await supabase.from('offers').select('*')
+      setRequests(reqs || [])
+      setOffers(offs || [])
+    } catch (e) {
+      console.log(e)
+    }
   }
 
   if (view === 'welcome') {
     return (
-      <div style={styles.welcome}>
-        <h1 style={styles.title}>HelpFlow</h1>
-        <p style={styles.subtitle}>Connect with people who need help or offer your services</p>
-        <div style={styles.buttonRow}>
-          <button style={styles.btnPrimary} onClick={() => setView('requests')}>I Need Help</button>
-          <button style={styles.btnSecondary} onClick={() => setView('offers')}>I Offer Help</button>
+      <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'#f8f9fa',padding:'24px',fontFamily:'sans-serif'}}>
+        <h1 style={{fontSize:'48px',fontWeight:'800',color:'#1a1a2e',marginBottom:'8px'}}>HelpFlow</h1>
+        <p style={{fontSize:'18px',color:'#666',marginBottom:'40px',textAlign:'center'}}>Connect with people who need help or offer your services</p>
+        <div style={{display:'flex',gap:'16px',marginBottom:'24px'}}>
+          <button onClick={() => setView('requests')} style={{background:'#4f46e5',color:'#fff',border:'none',borderRadius:'12px',padding:'14px 28px',fontSize:'16px',fontWeight:'600',cursor:'pointer'}}>I Need Help</button>
+          <button onClick={() => setView('offers')} style={{background:'#fff',color:'#4f46e5',border:'2px solid #4f46e5',borderRadius:'12px',padding:'14px 28px',fontSize:'16px',fontWeight:'600',cursor:'pointer'}}>I Offer Help</button>
         </div>
-        <p style={styles.browseLink} onClick={() => setView('feed')}>Browse all posts</p>
+        <span onClick={() => setView('requests')} style={{color:'#4f46e5',cursor:'pointer',textDecoration:'underline'}}>Browse all posts</span>
       </div>
     )
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.logo}>HelpFlow</h1>
-        <div style={styles.tabs}>
-          <button style={view === 'feed' || view === 'requests' ? styles.tabActive : styles.tab} onClick={() => setView('requests')}>Requests</button>
-          <button style={view === 'offers' ? styles.tabActive : styles.tab} onClick={() => setView('offers')}>Offers</button>
+    <div style={{minHeight:'100vh',background:'#f8f9fa',fontFamily:'sans-serif'}}>
+      <div style={{background:'#fff',padding:'16px 24px',display:'flex',alignItems:'center',justifyContent:'space-between',boxShadow:'0 1px 3px rgba(0,0,0,0.1)'}}>
+        <h1 onClick={() => setView('welcome')} style={{fontSize:'24px',fontWeight:'800',color:'#1a1a2e',margin:'0',cursor:'pointer'}}>HelpFlow</h1>
+        <div style={{display:'flex',gap:'8px'}}>
+          <button onClick={() => setView('requests')} style={{background: view==='requests' ? '#ede9fe' : 'transparent',color: view==='requests' ? '#4f46e5' : '#666',border:'none',padding:'8px 16px',borderRadius:'8px',cursor:'pointer',fontWeight: view==='requests' ? '600' : '400'}}>Requests</button>
+          <button onClick={() => setView('offers')} style={{background: view==='offers' ? '#ede9fe' : 'transparent',color: view==='offers' ? '#4f46e5' : '#666',border:'none',padding:'8px 16px',borderRadius:'8px',cursor:'pointer',fontWeight: view==='offers' ? '600' : '400'}}>Offers</button>
         </div>
-        <button style={styles.btnSmall} onClick={() => setView('post')}>+ Post</button>
+        <button onClick={() => setView('post')} style={{background:'#4f46e5',color:'#fff',border:'none',borderRadius:'8px',padding:'8px 16px',cursor:'pointer',fontWeight:'600'}}>+ Post</button>
       </div>
 
-      {(view === 'requests' || view === 'feed') && (
-        <div style={styles.feed}>
-          <h2 style={styles.feedTitle}>Help Requests</h2>
-          {requests.length === 0 && <p style={styles.empty}>No requests yet. Be the first to post.</p>}
-          {requests.map(req => (
-            <div key={req.id} style={styles.card}>
-              <h3 style={styles.cardTitle}>{req.title}</h3>
-              <p style={styles.cardText}>{req.description}</p>
-              <div style={styles.cardFooter}>
-                <span style={styles.tag}>{req.category}</span>
-                <span style={styles.tag}>{req.urgency}</span>
-                <span style={styles.tag}>{req.location}</span>
+      <div style={{padding:'24px',maxWidth:'800px',margin:'0 auto'}}>
+        {view === 'requests' && (
+          <div>
+            <h2 style={{fontSize:'22px',fontWeight:'700',marginBottom:'16px'}}>Help Requests</h2>
+            {requests.length === 0 && <p style={{color:'#999',textAlign:'center',padding:'40px'}}>No requests yet. Be the first to post.</p>}
+            {requests.map(req => (
+              <div key={req.id} style={{background:'#fff',borderRadius:'16px',padding:'20px',marginBottom:'16px',boxShadow:'0 1px 3px rgba(0,0,0,0.08)'}}>
+                <h3 style={{fontSize:'18px',fontWeight:'600',marginBottom:'8px'}}>{req.title}</h3>
+                <p style={{color:'#555',marginBottom:'12px'}}>{req.description}</p>
+                <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+                  {req.category && <span style={{background:'#ede9fe',color:'#4f46e5',borderRadius:'20px',padding:'4px 12px',fontSize:'13px'}}>{req.category}</span>}
+                  {req.urgency && <span style={{background:'#ede9fe',color:'#4f46e5',borderRadius:'20px',padding:'4px 12px',fontSize:'13px'}}>{req.urgency}</span>}
+                  {req.location && <span style={{background:'#ede9fe',color:'#4f46e5',borderRadius:'20px',padding:'4px 12px',fontSize:'13px'}}>{req.location}</span>}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      {view === 'offers' && (
-        <div style={styles.feed}>
-          <h2 style={styles.feedTitle}>Service Offers</h2>
-          {offers.length === 0 && <p style={styles.empty}>No offers yet. Be the first to post.</p>}
-          {offers.map(offer => (
-            <div key={offer.id} style={styles.card}>
-              <h3 style={styles.cardTitle}>{offer.service_name}</h3>
-              <p style={styles.cardText}>{offer.description}</p>
-              <div style={styles.cardFooter}>
-                <span style={styles.tag}>{offer.category}</span>
-                <span style={styles.tag}>{offer.location}</span>
-                <span style={styles.tag}>{offer.price}</span>
+        {view === 'offers' && (
+          <div>
+            <h2 style={{fontSize:'22px',fontWeight:'700',marginBottom:'16px'}}>Service Offers</h2>
+            {offers.length === 0 && <p style={{color:'#999',textAlign:'center',padding:'40px'}}>No offers yet. Be the first to post.</p>}
+            {offers.map(offer => (
+              <div key={offer.id} style={{background:'#fff',borderRadius:'16px',padding:'20px',marginBottom:'16px',boxShadow:'0 1px 3px rgba(0,0,0,0.08)'}}>
+                <h3 style={{fontSize:'18px',fontWeight:'600',marginBottom:'8px'}}>{offer.service_name}</h3>
+                <p style={{color:'#555',marginBottom:'12px'}}>{offer.description}</p>
+                <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+                  {offer.category && <span style={{background:'#ede9fe',color:'#4f46e5',borderRadius:'20px',padding:'4px 12px',fontSize:'13px'}}>{offer.category}</span>}
+                  {offer.location && <span style={{background:'#ede9fe',color:'#4f46e5',borderRadius:'20px',padding:'4px 12px',fontSize:'13px'}}>{offer.location}</span>}
+                  {offer.price && <span style={{background:'#ede9fe',color:'#4f46e5',borderRadius:'20px',padding:'4px 12px',fontSize:'13px'}}>{offer.price}</span>}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      {view === 'post' && <PostForm onBack={() => setView('feed')} onSuccess={() => { fetchRequests(); fetchOffers(); setView('feed') }} />}
+        {view === 'post' && (
+          <PostForm onBack={() => setView('requests')} />
+        )}
+      </div>
     </div>
   )
 }
 
-function PostForm({ onBack, onSuccess }) {
+function PostForm({ onBack }) {
   const [type, setType] = useState('request')
-  const [form, setForm] = useState({ title: '', description: '', category: '', location: '', urgency: 'flexible', budget: '', service_name: '', price: '' })
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('')
+  const [location, setLocation] = useState('')
+  const [urgency, setUrgency] = useState('flexible')
+  const [budget, setBudget] = useState('')
+  const [serviceName, setServiceName] = useState('')
+  const [price, setPrice] = useState('')
   const [loading, setLoading] = useState(false)
+  const [done, setDone] = useState(false)
 
   async function handleSubmit() {
     setLoading(true)
-    if (type === 'request') {
-      await supabase.from('requests').insert([{ title: form.title, description: form.description, category: form.category, location: form.location, urgency: form.urgency, budget: form.budget, status: 'open' }])
-    } else {
-      await supabase.from('offers').insert([{ service_name: form.service_name, description: form.description, category: form.category, location: form.location, price: form.price, status: 'active' }])
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      )
+      if (type === 'request') {
+        await supabase.from('requests').insert([{ title, description, category, location, urgency, budget, status: 'open' }])
+      } else {
+        await supabase.from('offers').insert([{ service_name: serviceName, description, category, location, price, status: 'active' }])
+      }
+      setDone(true)
+    } catch (e) {
+      console.log(e)
     }
     setLoading(false)
-    onSuccess()
   }
 
-  return (
-    <div style={styles.form}>
-      <button onClick={onBack} style={styles.back}>← Back</button>
-      <h2 style={styles.feedTitle}>Post Something</h2>
-      <div style={styles.buttonRow}>
-        <button style={type === 'request' ? styles.btnPrimary : styles.btnSecondary} onClick={() => setType('request')}>I Need Help</button>
-        <button style={type === 'offer' ? styles.btnPrimary : styles.btnSecondary} onClick={() => setType('offer')}>I Offer Help</button>
+  if (done) {
+    return (
+      <div style={{textAlign:'center',padding:'60px'}}>
+        <h2 style={{fontSize:'28px',fontWeight:'700',color:'#4f46e5',marginBottom:'16px'}}>Posted!</h2>
+        <p style={{color:'#666',marginBottom:'24px'}}>Your post is now live.</p>
+        <button onClick={onBack} style={{background:'#4f46e5',color:'#fff',border:'none',borderRadius:'12px',padding:'14px 28px',fontSize:'16px',cursor:'pointer'}}>Back to Feed</button>
       </div>
+    )
+  }
+
+  const inputStyle = {width:'100%',padding:'12px',borderRadius:'10px',border:'1.5px solid #e5e7eb',fontSize:'15px',marginBottom:'12px',boxSizing:'border-box',fontFamily:'sans-serif'}
+
+  return (
+    <div style={{maxWidth:'600px',margin:'0 auto'}}>
+      <button onClick={onBack} style={{background:'none',border:'none',color:'#4f46e5',fontSize:'15px',cursor:'pointer',marginBottom:'16px'}}>← Back</button>
+      <h2 style={{fontSize:'22px',fontWeight:'700',marginBottom:'20px'}}>Post Something</h2>
+      <div style={{display:'flex',gap:'12px',marginBottom:'24px'}}>
+        <button onClick={() => setType('request')} style={{flex:1,background: type==='request' ? '#4f46e5' : '#fff',color: type==='request' ? '#fff' : '#4f46e5',border:'2px solid #4f46e5',borderRadius:'12px',padding:'12px',fontWeight:'600',cursor:'pointer'}}>I Need Help</button>
+        <button onClick={() => setType('offer')} style={{flex:1,background: type==='offer' ? '#4f46e5' : '#fff',color: type==='offer' ? '#fff' : '#4f46e5',border:'2px solid #4f46e5',borderRadius:'12px',padding:'12px',fontWeight:'600',cursor:'pointer'}}>I Offer Help</button>
+      </div>
+
       {type === 'request' ? (
         <>
-          <input style={styles.input} placeholder="What do you need help with?" value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
-          <textarea style={styles.textarea} placeholder="Describe what you need in detail..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
-          <input style={styles.input} placeholder="Category (e.g. Delivery, Cleaning, Tech)" value={form.category} onChange={e => setForm({...form, category: e.target.value})} />
-          <input style={styles.input} placeholder="Location" value={form.location} onChange={e => setForm({...form, location: e.target.value})} />
-          <select style={styles.input} value={form.urgency} onChange={e => setForm({...form, urgency: e.target.value})}>
+          <input style={inputStyle} placeholder="What do you need help with?" value={title} onChange={e => setTitle(e.target.value)} />
+          <textarea style={{...inputStyle, minHeight:'100px'}} placeholder="Describe what you need..." value={description} onChange={e => setDescription(e.target.value)} />
+          <input style={inputStyle} placeholder="Category (e.g. Delivery, Cleaning, Tech)" value={category} onChange={e => setCategory(e.target.value)} />
+          <input style={inputStyle} placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} />
+          <select style={inputStyle} value={urgency} onChange={e => setUrgency(e.target.value)}>
             <option value="immediate">Immediate</option>
             <option value="soon">Soon</option>
             <option value="flexible">Flexible</option>
           </select>
-          <input style={styles.input} placeholder="Budget (optional)" value={form.budget} onChange={e => setForm({...form, budget: e.target.value})} />
+          <input style={inputStyle} placeholder="Budget (optional)" value={budget} onChange={e => setBudget(e.target.value)} />
         </>
       ) : (
         <>
-          <input style={styles.input} placeholder="Service name" value={form.service_name} onChange={e => setForm({...form, service_name: e.target.value})} />
-          <textarea style={styles.textarea} placeholder="Describe your service..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
-          <input style={styles.input} placeholder="Category" value={form.category} onChange={e => setForm({...form, category: e.target.value})} />
-          <input style={styles.input} placeholder="Location" value={form.location} onChange={e => setForm({...form, location: e.target.value})} />
-          <input style={styles.input} placeholder="Price or terms" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
+          <input style={inputStyle} placeholder="Service name" value={serviceName} onChange={e => setServiceName(e.target.value)} />
+          <textarea style={{...inputStyle, minHeight:'100px'}} placeholder="Describe your service..." value={description} onChange={e => setDescription(e.target.value)} />
+          <input style={inputStyle} placeholder="Category" value={category} onChange={e => setCategory(e.target.value)} />
+          <input style={inputStyle} placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} />
+          <input style={inputStyle} placeholder="Price or terms" value={price} onChange={e => setPrice(e.target.value)} />
         </>
       )}
-      <button style={styles.btnPrimary} onClick={handleSubmit} disabled={loading}>{loading ? 'Posting...' : 'Post Now'}</button>
+
+      <button onClick={handleSubmit} disabled={loading} style={{width:'100%',background:'#4f46e5',color:'#fff',border:'none',borderRadius:'12px',padding:'16px',fontSize:'16px',fontWeight:'600',cursor:'pointer'}}>
+        {loading ? 'Posting...' : 'Post Now'}
+      </button>
     </div>
   )
-}
-
-const styles = {
-  welcome: { minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8f9fa', padding: 24 },
-  title: { fontSize: 48, fontWeight: 800, color: '#1a1a2e', marginBottom: 8 },
-  subtitle: { fontSize: 18, color: '#666', marginBottom: 40, textAlign: 'center' },
-  buttonRow: { display: 'flex', gap: 16, marginBottom: 24 },
-  btnPrimary: { background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 12, padding: '14px 28px', fontSize: 16, fontWeight: 600, cursor: 'pointer' },
-  btnSecondary: { background: '#fff', color: '#4f46e5', border: '2px solid #4f46e5', borderRadius: 12, padding: '14px 28px', fontSize: 16, fontWeight: 600, cursor: 'pointer' },
-  btnSmall: { background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 14, fontWeight: 600, cursor: 'pointer' },
-  browseLink: { color: '#4f46e5', cursor: 'pointer', textDecoration: 'underline' },
-  container: { minHeight: '100vh', background: '#f8f9fa' },
-  header: { background: '#fff', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' },
-  logo: { fontSize: 24, fontWeight: 800, color: '#1a1a2e', margin: 0 },
-  tabs: { display: 'flex', gap: 8 },
-  tab: { background: 'transparent', border: 'none', padding: '8px 16px', fontSize: 15, color: '#666', cursor: 'pointer', borderRadius: 8 },
-  tabActive: { background: '#ede9fe', border: 'none', padding: '8px 16px', fontSize: 15, color: '#4f46e5', fontWeight: 600, cursor: 'pointer', borderRadius: 8 },
-  feed: { padding: 24, maxWidth: 800, margin: '0 auto' },
-  feedTitle: { fontSize: 22, fontWeight: 700, color: '#1a1a2e', marginBottom: 16 },
-  empty: { color: '#999', textAlign: 'center', padding: 40 },
-  card: { background: '#fff', borderRadius: 16, padding: 20, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' },
-  cardTitle: { fontSize: 18, fontWeight: 600, color: '#1a1a2e', marginBottom: 8 },
-  cardText: { fontSize: 15, color: '#555', marginBottom: 12 },
-  cardFooter: { display: 'flex', gap: 8, flexWrap: 'wrap' },
-  tag: { background: '#ede9fe', color: '#4f46e5', borderRadius: 20, padding: '4px 12px', fontSize: 13, fontWeight: 500 },
-  form: { padding: 24, maxWidth: 600, margin: '0 auto' },
-  back: { background: 'none', border: 'none', color: '#4f46e5', fontSize: 15, cursor: 'pointer', marginBottom: 16 },
-  input: { width: '100%', padding: 12, borderRadius: 10, border: '1.5px solid #e5e7eb', fontSize: 15, marginBottom: 12, boxSizing: 'border-box' },
-  textarea: { width: '100%', padding: 12, borderRadius: 10, border: '1.5px solid #e5e7eb', fontSize: 15, marginBottom: 12, minHeight: 100, boxSizing: 'border-box' },
 }
